@@ -1,15 +1,31 @@
 import express from "express";
+import dotenv from "dotenv";
 import axios from "axios";
+
 import bluetoothRoutes from "./routes/bluetooth.routes";
 import behavioralRoutes from "./routes/behavioral.routes";
 import underwritingRoutes from "./routes/underwriting.routes";
 
+dotenv.config();
+
 const app = express();
 app.use(express.json());
+
+// Attach your microservice routes
 app.use(bluetoothRoutes);
 app.use(behavioralRoutes);
+app.use(underwritingRoutes);
 
+// Railway PORT
+const PORT = process.env.PORT || 3000;
+
+// NestJS Gateway URL
 const NEST_URL = process.env.NEST_URL || "http://localhost:4000";
+
+// Root endpoint (Railway needs this)
+app.get("/", (req, res) => {
+  res.send("src-express is running");
+});
 
 // Health check
 app.get("/health", (req, res) => {
@@ -69,15 +85,14 @@ app.get("/fraud/clusters/:id", async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Gateway running on port ${PORT}`);
-});
-// Admin proxy routes
-app.get('/admin/users', async (req, res) => {
+/**
+ * ADMIN PROXY ROUTES
+ */
+
+app.get("/admin/users", async (req, res) => {
   try {
     const response = await axios.get(`${NEST_URL}/admin/users`, {
-      headers: { authorization: req.headers.authorization || '' },
+      headers: { authorization: req.headers.authorization || "" },
     });
     res.json(response.data);
   } catch (err: any) {
@@ -85,15 +100,18 @@ app.get('/admin/users', async (req, res) => {
   }
 });
 
-app.get('/admin/stats', async (req, res) => {
+app.get("/admin/stats", async (req, res) => {
   try {
     const response = await axios.get(`${NEST_URL}/admin/stats`, {
-      headers: { authorization: req.headers.authorization || '' },
+      headers: { authorization: req.headers.authorization || "" },
     });
     res.json(response.data);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });
-app.use(underwritingRoutes);
 
+// Start server
+app.listen(PORT, () => {
+  console.log(`src-express running on port ${PORT}`);
+});
